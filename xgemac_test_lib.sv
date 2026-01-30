@@ -56,12 +56,7 @@ class xgemac_base_test;
     fork
       begin
         p[0]=process::self();
-        if(h_cfg.trans_count>=8) begin
-          wait(h_cfg.trans_count == h_cfg.act_count);
-        end
-        else begin
-          wait(h_cfg.act_count == 8);
-        end
+        wait(h_cfg.trans_count == h_cfg.act_count);
       end
       begin
         p[1]=process::self();
@@ -128,7 +123,7 @@ class xgemac_random_test extends xgemac_base_test;
 
   function void set_test_specific_configuration();
     $display("%0s: Set config method", TAG);
-    h_cfg.trans_count=$urandom_range(100, 500);
+    h_cfg.trans_count=$urandom_range(200,50);
   endfunction: set_test_specific_configuration
 
   task give_stimulus();

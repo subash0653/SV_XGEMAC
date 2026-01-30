@@ -27,7 +27,7 @@ class xgemac_tx_gen;
       h_pkt.pkt_tx_sop  = (count==0) ? 'h1 : 'h0;
       count++;
       h_pkt.pkt_tx_eop  = (count==h_cfg.trans_count) ? 'h1 : 'h0;
-      h_pkt.pkt_tx_mod  = (count==h_cfg.trans_count) ? 'h2 : 'h0;
+      h_pkt.pkt_tx_mod  = (count==h_cfg.trans_count) ? 'h4 : 'h0;
       $cast(h_cl_pkt, h_pkt.clone());
       tx_mbx.put(h_cl_pkt);
     end
@@ -66,8 +66,8 @@ class xgemac_tx_gen;
   task gen_random_stimulus_and_put_in_mbx();
     xgemac_tx_pkt h_pkt, h_cl_pkt;
     int unsigned count, index;
-    int unsigned arr[];
-    if(!std::randomize(arr) with {arr.size()==(h_cfg.trans_count/10);arr.sum()==h_cfg.trans_count; foreach(arr[i]) {arr[i]<=20;arr[i]>=10;}}) begin
+    int unsigned arr[$];
+    if(!std::randomize(arr) with {arr.size<50; arr.sum()==h_cfg.trans_count; foreach(arr[i]) {arr[i]>=2;}}) begin
       $display("Array randomization fail in tx generator");
     end
     repeat(h_cfg.trans_count) begin
@@ -90,6 +90,7 @@ class xgemac_tx_gen;
       end
       else begin
         h_pkt.pkt_tx_eop  = 'h0;
+        h_pkt.pkt_tx_mod  = 'h0;
       end
       $cast(h_cl_pkt, h_pkt.clone());
       tx_mbx.put(h_cl_pkt);

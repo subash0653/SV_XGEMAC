@@ -1,7 +1,8 @@
 class xgemac_scoreboard;
 
   string TAG = "XGEMAC_SCOREBOARD";
-  bit reset;
+  int unsigned tx_trans_count, tx_count, rx_trans_count, rx_count;
+  int unsigned count_arr[$];
 
   xgemac_tb_config h_cfg;
   
@@ -30,13 +31,12 @@ class xgemac_scoreboard;
       wait_for_tx_pkt();
       wait_for_rx_pkt();
       wait_for_wb_pkt();
-      wait_for_reset();
     join
   endtask: run
   
   function void push_expected();
     xgemac_tx_pkt h_pkt;
-    repeat(8-h_cfg.trans_count-1) begin
+    repeat(8-tx_trans_count-1) begin
       h_pkt = new();
       expected.push_back(h_pkt);
     end
@@ -50,29 +50,28 @@ class xgemac_scoreboard;
     xgemac_tx_pkt h_pkt, h_cl_pkt;
     forever begin
       tx_mbx.get(h_pkt);
+      tx_count++;
       $cast(h_cl_pkt, h_pkt.clone());
-      $display("From tx monitor to scoreboard");
-      h_cl_pkt.display();
-      if(h_cl_pkt.pkt_tx_eop == 1 && h_cfg.trans_count<8) begin
+     // $display("From tx monitor to scoreboard");
+     // h_cl_pkt.display();
+      if(h_cl_pkt.pkt_tx_eop == 1) begin
+        tx_trans_count = tx_count;
+        count_arr.push_back(tx_trans_count);
+        tx_count=0;
+      end
+      if(h_cl_pkt.pkt_tx_eop == 1 && tx_trans_count<8) begin
         h_cl_pkt.pkt_tx_mod = 'h0;
         h_cl_pkt.pkt_tx_eop = 'h0;
         expected.push_back(h_cl_pkt);
         push_expected();
       end
-      else if(h_cl_pkt.pkt_tx_eop == 1 && h_cfg.trans_count==8 && h_cl_pkt.pkt_tx_mod <4) begin
+      else if(h_cl_pkt.pkt_tx_eop == 1 && tx_trans_count==8 && h_cl_pkt.pkt_tx_mod <4 && h_cl_pkt.pkt_tx_mod !=0) begin
         h_cl_pkt.pkt_tx_mod = 'h4;
         expected.push_back(h_cl_pkt);
       end
       else begin
         expected.push_back(h_cl_pkt);
       end
-     // if(reset == 1) begin
-     //   h_cfg.act_count++;
-     //   expected.delete();
-     // end
-     // if(h_cl_pkt.pkt_tx_sop == 1) begin
-     //  reset=0;
-     // end
     end
   endtask: wait_for_tx_pkt
 
@@ -81,10 +80,18 @@ class xgemac_scoreboard;
     forever begin
       rx_mbx.get(h_pkt);
       $cast(h_cl_pkt, h_pkt.clone());
-      //$display("From rx monitor to scoreboard");
-      //h_cl_pkt.display();
+      $display("From rx monitor to scoreboard");
+      h_cl_pkt.display();
       check_exp_data_and_act_data(h_cl_pkt);
-      h_cfg.act_count++;
+      if(h_cl_pkt.pkt_rx_sop==1) begin
+        rx_trans_count=count_arr.pop_front();
+      end
+      if(rx_trans_count>=8) begin
+        h_cfg.act_count++;
+      end
+      else if(h_cl_pkt.pkt_rx_eop==1) begin
+        h_cfg.act_count += rx_trans_count;
+      end
     end
   endtask: wait_for_rx_pkt
 
@@ -98,25 +105,26 @@ class xgemac_scoreboard;
   function void check_exp_data_and_act_data(xgemac_rx_pkt h_act_pkt);
     xgemac_tx_pkt h_exp_pkt;
     h_exp_pkt = expected.pop_front();
+    h_exp_pkt.display();
     if(h_act_pkt.pkt_rx_sop   !==    h_exp_pkt.pkt_tx_sop) begin
       $error("SOP does not match");
       h_cfg.test_status=1;
-      h_cfg.print_string={h_cfg.print_string, $sformatf("Actual count = %0d; Expected SOP = %0h, Actual SOP = %0h\n", h_cfg.act_count, h_exp_pkt.pkt_tx_sop, h_act_pkt.pkt_rx_sop)};
+      h_cfg.print_string={h_cfg.print_string, $sformatf("Actual count = %0d; Expected SOP = %0h, Actual SOP = %0h at --> %0t\n", h_cfg.act_count, h_exp_pkt.pkt_tx_sop, h_act_pkt.pkt_rx_sop, $time)};
     end
     if(h_act_pkt.pkt_rx_eop   !==    h_exp_pkt.pkt_tx_eop) begin
       $error("EOP does not match");
       h_cfg.test_status=1;
-      h_cfg.print_string={h_cfg.print_string, $sformatf("Actual count = %0d; Expected EOP = %0h, Actual EOP = %0h\n", h_cfg.act_count, h_exp_pkt.pkt_tx_eop, h_act_pkt.pkt_rx_eop)};
+      h_cfg.print_string={h_cfg.print_string, $sformatf("Actual count = %0d; Expected EOP = %0h, Actual EOP = %0h at --> %0t\n", h_cfg.act_count, h_exp_pkt.pkt_tx_eop, h_act_pkt.pkt_rx_eop, $time)};
     end
     if(h_act_pkt.pkt_rx_mod === 0 ? h_act_pkt.pkt_rx_data !== h_exp_pkt.pkt_tx_data : h_act_pkt.pkt_rx_data & check_mod(h_act_pkt.pkt_rx_mod)  !==    h_exp_pkt.pkt_tx_data & check_mod(h_exp_pkt.pkt_tx_mod)) begin
       $error("DATA does not match");
       h_cfg.test_status=1;
-      h_cfg.print_string={h_cfg.print_string, $sformatf("Actual count = %0d; Expected DATA = %0h, Actual DATA = %0h, exp_mod = %0h, act_mod = %0h\n", h_cfg.act_count, h_exp_pkt.pkt_tx_data, h_act_pkt.pkt_rx_data, h_exp_pkt.pkt_tx_mod, h_act_pkt.pkt_rx_mod)};
+      h_cfg.print_string={h_cfg.print_string, $sformatf("Actual count = %0d; Expected DATA = %0h, Actual DATA = %0h, exp_mod = %0h, act_mod = %0h at --> %0t\n", h_cfg.act_count, h_exp_pkt.pkt_tx_data, h_act_pkt.pkt_rx_data, h_exp_pkt.pkt_tx_mod, h_act_pkt.pkt_rx_mod, $time)};
     end
     if((h_act_pkt.pkt_rx_eop === 1) && (h_act_pkt.pkt_rx_mod  !==  h_exp_pkt.pkt_tx_mod)) begin
       $error("MOD does not match");
       h_cfg.test_status=1;
-      h_cfg.print_string={h_cfg.print_string, $sformatf("Actual count = %0d; Expected MOD = %0h, Actual MOD = %0h\n", h_cfg.act_count, h_exp_pkt.pkt_tx_mod, h_act_pkt.pkt_rx_mod)};
+      h_cfg.print_string={h_cfg.print_string, $sformatf("Actual count = %0d; Expected MOD = %0h, Actual MOD = %0h at --> %0t\n", h_cfg.act_count, h_exp_pkt.pkt_tx_mod, h_act_pkt.pkt_rx_mod, $time)};
     end
   endfunction: check_exp_data_and_act_data
 
@@ -129,17 +137,6 @@ class xgemac_scoreboard;
       $display("-------------------------------------------------------------");
     end
   endtask: wait_for_wb_pkt
-
-  task wait_for_reset();
-    forever begin
-      bit b;
-      rst_mbx.get(b);
-      reset=1;
-      h_cfg.act_count += expected.size();
-      expected.delete();
-      //$display("========================================= %0d, at %0t", h_cfg.act_count, $time);
-    end
-  endtask: wait_for_reset
 
   function void report();
     if(expected.size()!=0) begin
