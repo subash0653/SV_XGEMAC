@@ -66,13 +66,13 @@ class xgemac_scoreboard;
       else begin
         expected.push_back(h_cl_pkt);
       end
-      if(reset == 1) begin
-        h_cfg.act_count++;
-        expected.delete();
-      end
-      if(h_cl_pkt.pkt_tx_sop == 1) begin
-       reset=0;
-      end
+     // if(reset == 1) begin
+     //   h_cfg.act_count++;
+     //   expected.delete();
+     // end
+     // if(h_cl_pkt.pkt_tx_sop == 1) begin
+     //  reset=0;
+     // end
     end
   endtask: wait_for_tx_pkt
 
@@ -135,10 +135,9 @@ class xgemac_scoreboard;
       bit b;
       rst_mbx.get(b);
       reset=1;
-      h_cfg.act_count++;
       h_cfg.act_count += expected.size();
       expected.delete();
-      $display("========================================= %0d, at %0t", h_cfg.act_count, $time);
+      //$display("========================================= %0d, at %0t", h_cfg.act_count, $time);
     end
   endtask: wait_for_reset
 

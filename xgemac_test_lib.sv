@@ -171,7 +171,7 @@ class xgemac_padding_test extends xgemac_base_test;
 
   function void set_test_specific_configuration();
     $display("%0s: Set config method", TAG);
-    h_cfg.trans_count=4;
+    h_cfg.trans_count=5;
   endfunction: set_test_specific_configuration
 
   task give_stimulus();
