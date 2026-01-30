@@ -3,6 +3,7 @@ class xgemac_rst_driver#(RST_PERIOD, rst_type_t rst_type, type vif_t);
   string TAG = "XGEMAC_RST_DRIVER";
 
   vif_t vif;
+  mailbox#(bit) rst_mbx;
 
   function new(vif_t vif);
     this.vif=vif;
@@ -19,13 +20,16 @@ class xgemac_rst_driver#(RST_PERIOD, rst_type_t rst_type, type vif_t);
 
   task run();
     $display("%0s: Run method", TAG);
-    vif.rst=rst_type;
-    @(posedge vif.clk);
-    vif.rst=~rst_type;
-    repeat(RST_PERIOD) begin
+    forever begin
+      bit b;
+      rst_mbx.get(b);
       @(posedge vif.clk);
+      vif.rst = ~rst_type;
+      repeat(RST_PERIOD) begin
+        @(posedge vif.clk);
+      end
+      vif.rst = rst_type;
     end
-    vif.rst=rst_type;
   endtask: run
 
 endclass: xgemac_rst_driver

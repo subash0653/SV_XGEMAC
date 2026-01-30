@@ -39,31 +39,41 @@ program xgemac_test_top(xgemac_tx_interface tx_intff, xgemac_rx_interface rx_int
 
       "xgemac_base_test": h_test=new(h_cfg);
 
-      "xgemac_direct_test": begin
-                              xgemac_direct_test h_dir_test;
-                              h_dir_test=new(h_cfg);
-                              $cast(h_test, h_dir_test);
-                            end
-      "xgemac_incremental_test": begin
-                                   xgemac_incremental_test h_incr_test;
-                                   h_incr_test=new(h_cfg);
-                                   $cast(h_test, h_incr_test);
-                                 end
-      "xgemac_random_test": begin 
-                              xgemac_random_test h_rand_test;
-                              h_rand_test=new(h_cfg);
-                              $cast(h_test, h_rand_test);
-                            end
-      "xgemac_wb_test": begin
-                          xgemac_wb_test h_wb_test;
-                          h_wb_test=new(h_cfg);
-                          $cast(h_test, h_wb_test);
-                        end
-      "xgemac_tx_full_test": begin
-                               xgemac_tx_full_test h_tx_full_test;
-                               h_tx_full_test=new(h_cfg);
-                               $cast(h_test, h_tx_full_test);
-                             end
+      "xgemac_direct_test":         begin
+                                      xgemac_direct_test h_dir_test;
+                                      h_dir_test=new(h_cfg);
+                                      $cast(h_test, h_dir_test);
+                                    end
+      "xgemac_incremental_test":    begin
+                                      xgemac_incremental_test h_incr_test;
+                                      h_incr_test=new(h_cfg);
+                                      $cast(h_test, h_incr_test);
+                                    end
+      "xgemac_random_test":         begin 
+                                      xgemac_random_test h_rand_test;
+                                      h_rand_test=new(h_cfg);
+                                      $cast(h_test, h_rand_test);
+                                    end
+      "xgemac_wb_test":             begin
+                                      xgemac_wb_test h_wb_test;
+                                      h_wb_test=new(h_cfg);
+                                      $cast(h_test, h_wb_test);
+                                    end
+      "xgemac_padding_test":        begin
+                                      xgemac_padding_test h_padding_test;
+                                      h_padding_test=new(h_cfg);
+                                      $cast(h_test, h_padding_test);
+                                    end
+      "xgemac_tx_full_test":        begin
+                                      xgemac_tx_full_test h_tx_full_test;
+                                      h_tx_full_test=new(h_cfg);
+                                      $cast(h_test, h_tx_full_test);
+                                    end
+      "xgemac_reset_test":          begin
+                                      xgemac_reset_test h_reset_test;
+                                      h_reset_test=new(h_cfg);
+                                      $cast(h_test, h_reset_test);
+                                    end
     endcase
     h_test.build();
     h_test.connect();

@@ -1,10 +1,9 @@
-class xgemac_rst_monitor#(type vif_t);
+class xgemac_rst_monitor#(type vif_t, rst_type_t rst_type);
 
   string TAG = "XGEMAC_RESET_MONITOR";
 
-  mailbox mbx;
+  mailbox#(bit) rst_mbx;
   vif_t vif;
-  xgemac_tb_config h_cfg;
 
   function new(vif_t vif);
     this.vif = vif;
@@ -12,7 +11,7 @@ class xgemac_rst_monitor#(type vif_t);
 
   function void build();
     $display("%0s: Build method", TAG);
-    mbx = new();
+    rst_mbx = new();
   endfunction: build
 
   function void connect();
@@ -26,10 +25,10 @@ class xgemac_rst_monitor#(type vif_t);
 
   task collect_from_vif();
     forever begin
-      if(vif.mrcb.rst) begin
-        mbx.put(vif.mrcb.rst);
+      if(vif.rst===~rst_type) begin
+        rst_mbx.put(1);
       end
-      @(vif.mrcb);
+      @(posedge vif.clk);
     end
   endtask: collect_from_vif
 

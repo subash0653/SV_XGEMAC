@@ -23,11 +23,11 @@ class xgemac_tx_gen;
     int unsigned count;
     repeat(h_cfg.trans_count) begin
       h_pkt=new();
-      h_pkt.pkt_tx_data = `DATA_WIDTH'hFFFF_FFFF_FFFF_FFFF;
+      h_pkt.pkt_tx_data = `DATA_WIDTH'hABCD_1234_ABCD_5678;
       h_pkt.pkt_tx_sop  = (count==0) ? 'h1 : 'h0;
       count++;
       h_pkt.pkt_tx_eop  = (count==h_cfg.trans_count) ? 'h1 : 'h0;
-      h_pkt.pkt_tx_mod  = (count==h_cfg.trans_count) ? 'h1 : 'h0;
+      h_pkt.pkt_tx_mod  = (count==h_cfg.trans_count) ? 'h2 : 'h0;
       $cast(h_cl_pkt, h_pkt.clone());
       tx_mbx.put(h_cl_pkt);
     end

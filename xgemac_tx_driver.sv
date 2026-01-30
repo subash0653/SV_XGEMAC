@@ -63,8 +63,8 @@ class xgemac_tx_driver;
     forever begin
       tx_mbx.get(h_tx_pkt);
       $cast(h_tx_cl_pkt, h_tx_pkt.clone());
-      $display("From tx generator to driver : ");
-      h_tx_cl_pkt.display();
+      //$display("From tx generator to driver : ");
+      //h_tx_cl_pkt.display();
       drive_into_pins(h_tx_cl_pkt);
       @(posedge vif.clk);
       reset_input_signals();

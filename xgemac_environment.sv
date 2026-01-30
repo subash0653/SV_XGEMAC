@@ -9,10 +9,20 @@ class xgemac_env;
   xgemac_clk_driver#(.t(int), .CLOCK_PERIOD(`TXRX_CLOCK_PERIOD), .vif_t(clk_156m25_vif_t)) txrx_clk_drv;
   xgemac_clk_driver#(.t(int), .CLOCK_PERIOD(`XGMII_CLOCK_PERIOD), .vif_t(clk_xgmii_txrx_vif_t)) xgmii_clk_drv;
 
+  //reset generator
+  xgemac_rst_gen wb_rst_gen;
+  xgemac_rst_gen txrx_rst_gen;
+  xgemac_rst_gen xgmii_rst_gen;
+
   //reset driver
   xgemac_rst_driver#(.RST_PERIOD(`RESET_PERIOD), .rst_type(POS_RESET), .vif_t(wb_rst_i_vif_t)) wb_rst_drv;
   xgemac_rst_driver#(.RST_PERIOD(`RESET_PERIOD), .rst_type(NEG_RESET), .vif_t(reset_156m25_n_vif_t)) txrx_rst_drv;
   xgemac_rst_driver#(.RST_PERIOD(`RESET_PERIOD), .rst_type(NEG_RESET), .vif_t(reset_xgmii_txrx_n_vif_t)) xgmii_rst_drv;
+
+  //reset monitor
+  xgemac_rst_monitor#(.vif_t(wb_rst_i_vif_t), .rst_type(POS_RESET)) wb_rst_mon;
+  xgemac_rst_monitor#(.vif_t(reset_156m25_n_vif_t), .rst_type(NEG_RESET)) txrx_rst_mon;
+  xgemac_rst_monitor#(.vif_t(reset_xgmii_txrx_n_vif_t), .rst_type(NEG_RESET)) xgmii_rst_mon;
 
   //tx generator
   xgemac_tx_gen h_tx_gen;
@@ -54,6 +64,15 @@ class xgemac_env;
       xgmii_clk_drv.build();
     end
 
+    if(h_cfg.has_rst_gen) begin
+      wb_rst_gen    =   new();
+      txrx_rst_gen  =   new();
+      xgmii_rst_gen =   new();
+      wb_rst_gen.build();
+      txrx_rst_gen.build();
+      xgmii_rst_gen.build();
+    end
+
     if(h_cfg.has_rst_drv) begin
       wb_rst_drv    =   new(h_cfg.wb_rst_i_vif);
       txrx_rst_drv  =   new(h_cfg.reset_156m25_n_vif);
@@ -61,6 +80,15 @@ class xgemac_env;
       wb_rst_drv.build();
       txrx_rst_drv.build();
       xgmii_rst_drv.build();
+    end
+
+    if(h_cfg.has_rst_mon) begin
+      wb_rst_mon    =   new(h_cfg.wb_rst_i_vif);
+      txrx_rst_mon  =   new(h_cfg.reset_156m25_n_vif);
+      xgmii_rst_mon =   new(h_cfg.reset_xgmii_txrx_n_vif);
+      wb_rst_mon.build();
+      txrx_rst_mon.build();
+      xgmii_rst_mon.build();
     end
 
     if(h_cfg.has_tx_gen) begin
@@ -120,10 +148,25 @@ class xgemac_env;
       xgmii_clk_drv.connect();
     end
 
+    if(h_cfg.has_rst_gen) begin
+      wb_rst_gen.connect();
+      txrx_rst_gen.connect();
+      xgmii_rst_gen.connect();
+    end
+
     if(h_cfg.has_rst_drv) begin
       wb_rst_drv.connect();
       txrx_rst_drv.connect();
       xgmii_rst_drv.connect();
+      wb_rst_drv.rst_mbx    = wb_rst_gen.rst_mbx;
+      txrx_rst_drv.rst_mbx  = txrx_rst_gen.rst_mbx;
+      xgmii_rst_drv.rst_mbx = xgmii_rst_gen.rst_mbx;
+    end
+
+    if(h_cfg.has_rst_mon) begin
+      wb_rst_mon.connect();
+      txrx_rst_mon.connect();
+      xgmii_rst_mon.connect();
     end
 
     if(h_cfg.has_tx_gen) begin
@@ -151,6 +194,7 @@ class xgemac_env;
       h_scbd.connect();
       h_scbd.tx_mbx = h_tx_mon.tx_mbx;
       h_scbd.rx_mbx = h_rx_mon.rx_mbx;
+      h_scbd.rst_mbx= txrx_rst_mon.rst_mbx; 
     end
 
     if(h_cfg.has_wb_gen) begin
@@ -186,11 +230,31 @@ class xgemac_env;
     end
 
     begin
+      if(h_cfg.has_rst_gen) begin
+        fork
+          wb_rst_gen.gen_rst_and_put_in_mbx();
+          txrx_rst_gen.gen_rst_and_put_in_mbx();
+          xgmii_rst_gen.gen_rst_and_put_in_mbx();
+        join_none
+      end
+    end
+
+    begin
       if(h_cfg.has_rst_drv) begin
         fork
           wb_rst_drv.run();
           txrx_rst_drv.run();
           xgmii_rst_drv.run();
+        join_none
+      end
+    end
+
+    begin
+      if(h_cfg.has_rst_mon) begin
+        fork
+          wb_rst_mon.run();
+          txrx_rst_mon.run();
+          xgmii_rst_mon.run();
         join_none
       end
     end

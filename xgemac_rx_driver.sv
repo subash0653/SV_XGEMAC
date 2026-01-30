@@ -28,17 +28,13 @@ class xgemac_rx_driver;
   endtask: run
 
   task wait_for_reset_done();
+    wait(vif.rst_n===0);
     @(posedge vif.rst_n);
   endtask: wait_for_reset_done
 
   function void reset_input_signals();
     vif.pkt_rx_ren=0;
   endfunction: reset_input_signals
-
-  task deassert_rx_ren();
-    wait(vif.mrcb.pkt_rx_val === 1 && vif.mrcb.pkt_rx_eop ===1);
-    vif.drcb.pkt_rx_ren <=  0;
-  endtask: deassert_rx_ren
 
   task drive_transfer();
     process p[2];
@@ -61,8 +57,8 @@ class xgemac_rx_driver;
     forever begin
       wait(vif.mrcb.pkt_rx_avail===1);
       drive_into_pins();
-      @(posedge vif.clk);
-      deassert_rx_ren();
+      wait(vif.mrcb.pkt_rx_val === 1 && vif.mrcb.pkt_rx_eop ===1);
+      reset_input_signals();
     end
   endtask: wait_and_drive
 

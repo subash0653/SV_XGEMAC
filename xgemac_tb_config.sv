@@ -3,7 +3,9 @@ class xgemac_tb_config;
   //knobs
   bit has_env     = 1;
   bit has_clk_drv = 1;
+  bit has_rst_gen = 1;
   bit has_rst_drv = 1;
+  bit has_rst_mon = 1;
   bit has_tx_gen  = 1;
   bit has_tx_drv  = 1;
   bit has_tx_mon  = 1;
@@ -14,8 +16,7 @@ class xgemac_tb_config;
   bit has_wb_drv  = 1;
   bit has_wb_mon  = 1;
   
-  rand int unsigned trans_count;
-       int unsigned act_count;
+  int unsigned trans_count, act_count;
 
   string print_string;
   bit test_status;

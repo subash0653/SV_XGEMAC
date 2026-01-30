@@ -29,7 +29,7 @@ class xgemac_tx_monitor;
   endtask: run
 
   task wait_for_reset_done();
-    wait(vif.rst_n === 1);
+    wait(vif.rst_n===0);
     @(posedge vif.rst_n);
   endtask: wait_for_reset_done
 

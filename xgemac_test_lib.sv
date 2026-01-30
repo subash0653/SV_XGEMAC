@@ -56,7 +56,12 @@ class xgemac_base_test;
     fork
       begin
         p[0]=process::self();
-        wait(h_cfg.trans_count == h_cfg.act_count);
+        if(h_cfg.trans_count>=8) begin
+          wait(h_cfg.trans_count == h_cfg.act_count);
+        end
+        else begin
+          wait(h_cfg.act_count == 8);
+        end
       end
       begin
         p[1]=process::self();
@@ -66,8 +71,8 @@ class xgemac_base_test;
         h_cfg.print_string = {h_cfg.print_string, $sformatf("TEST TIMEOUT AT %0tns", $time/1000)};
       end
     join_any
-    if(h_cfg.trans_count!=0) begin
-      foreach(p[i]) begin
+    foreach(p[i]) begin
+      if(p[i]!=null) begin
         p[i].kill();
       end
     end
@@ -195,3 +200,33 @@ class xgemac_tx_full_test extends xgemac_base_test;
   endtask: give_stimulus
 
 endclass: xgemac_tx_full_test
+
+class xgemac_reset_test extends xgemac_base_test;
+
+  function new(xgemac_tb_config h_cfg);
+    super.new(h_cfg);
+    TAG = "XGEMAC_RESET_TEST";
+  endfunction: new
+
+  function void set_test_specific_configuration();
+    $display("%0s: Set config method", TAG);
+    h_cfg.trans_count=50;
+  endfunction: set_test_specific_configuration
+
+  task give_stimulus();
+    $display("%0s: Give stimulus", TAG);
+    fork
+      h_env.h_tx_gen.gen_direct_stimulus_and_put_in_mbx();
+      begin
+        //wait(h_cfg.act_count==25);
+        #170ns;
+        fork
+          h_env.txrx_rst_gen.gen_rst_and_put_in_mbx();
+          h_env.wb_rst_gen.gen_rst_and_put_in_mbx();
+          h_env.xgmii_rst_gen.gen_rst_and_put_in_mbx();
+        join
+      end
+    join
+  endtask: give_stimulus
+
+endclass: xgemac_reset_test
