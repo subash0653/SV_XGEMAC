@@ -2,7 +2,6 @@ class xgemac_scoreboard;
 
   string TAG = "XGEMAC_SCOREBOARD";
   bit reset;
-  int t_count;
 
   xgemac_tb_config h_cfg;
   
@@ -26,29 +25,13 @@ class xgemac_scoreboard;
   endfunction: connect
 
   task run();
-   // process p;
-      $display("%0s: Run method", TAG);
-   // forever begin
-   //   fork
-   //     begin
-   //       p=process::self();
-          fork
-            wait_for_tx_pkt();
-            wait_for_rx_pkt();
-            wait_for_wb_pkt();
-            wait_for_reset();
-          join
-  //      end
-  //      begin
-  //        wait_for_reset();
-  //      end
-  //    join_any
-  //    if(p!=null) begin
-  //      p.kill();
-  //    end
-  //    expected.delete();
-  //    h_cfg.act_count++;//FIXME
-  //  end
+    $display("%0s: Run method", TAG);
+    fork
+      wait_for_tx_pkt();
+      wait_for_rx_pkt();
+      wait_for_wb_pkt();
+      wait_for_reset();
+    join
   endtask: run
   
   function void push_expected();
@@ -67,13 +50,9 @@ class xgemac_scoreboard;
     xgemac_tx_pkt h_pkt, h_cl_pkt;
     forever begin
       tx_mbx.get(h_pkt);
-      t_count++;
       $cast(h_cl_pkt, h_pkt.clone());
       $display("From tx monitor to scoreboard");
       h_cl_pkt.display();
-      if(h_cl_pkt.pkt_tx_sop == 1) begin
-        reset=0;
-      end
       if(h_cl_pkt.pkt_tx_eop == 1 && h_cfg.trans_count<8) begin
         h_cl_pkt.pkt_tx_mod = 'h0;
         h_cl_pkt.pkt_tx_eop = 'h0;
@@ -90,6 +69,9 @@ class xgemac_scoreboard;
       if(reset == 1) begin
         h_cfg.act_count++;
         expected.delete();
+      end
+      if(h_cl_pkt.pkt_tx_sop == 1) begin
+       reset=0;
       end
     end
   endtask: wait_for_tx_pkt
@@ -152,9 +134,11 @@ class xgemac_scoreboard;
     forever begin
       bit b;
       rst_mbx.get(b);
+      reset=1;
+      h_cfg.act_count++;
       h_cfg.act_count += expected.size();
       expected.delete();
-      reset=1;
+      $display("========================================= %0d, at %0t", h_cfg.act_count, $time);
     end
   endtask: wait_for_reset
 
