@@ -1,8 +1,6 @@
 class xgemac_scoreboard;
 
   string TAG = "XGEMAC_SCOREBOARD";
-  int unsigned tx_trans_count, tx_count, rx_trans_count, rx_count;
-  int unsigned count_arr[$];
 
   xgemac_tb_config h_cfg;
   
@@ -26,15 +24,43 @@ class xgemac_scoreboard;
   endfunction: connect
 
   task run();
+    process p[4];
     $display("%0s: Run method", TAG);
-    fork
-      wait_for_tx_pkt();
-      wait_for_rx_pkt();
-      wait_for_wb_pkt();
-    join
+    forever begin
+      fork
+        begin
+          p[0]=process::self();
+          wait_for_tx_pkt();
+        end
+        begin
+          p[1]=process::self();
+          wait_for_rx_pkt();
+        end
+        begin
+          p[2]=process::self();
+          wait_for_wb_pkt();
+        end
+        begin
+          p[3]=process::self();
+          wait_for_reset();
+        end
+      join_any
+      foreach(p[i]) begin
+        if(p[i]!=null) begin
+          p[i].kill();
+        end
+      end
+    end
   endtask: run
+
+  task wait_for_reset();
+      bit b;
+      rst_mbx.get(b);
+      h_cfg.act_count+=expected.size();
+      expected.delete();
+  endtask: wait_for_reset
   
-  function void push_expected();
+  function void push_expected(int tx_trans_count);
     xgemac_tx_pkt h_pkt;
     repeat(8-tx_trans_count-1) begin
       h_pkt = new();
@@ -47,23 +73,24 @@ class xgemac_scoreboard;
   endfunction: push_expected
 
   task wait_for_tx_pkt();
+    int tx_count, tx_trans_count;
     xgemac_tx_pkt h_pkt, h_cl_pkt;
     forever begin
       tx_mbx.get(h_pkt);
       tx_count++;
       $cast(h_cl_pkt, h_pkt.clone());
-     // $display("From tx monitor to scoreboard");
-     // h_cl_pkt.display();
+      //$display("From tx monitor to scoreboard");
+      //h_cl_pkt.display();
       if(h_cl_pkt.pkt_tx_eop == 1) begin
         tx_trans_count = tx_count;
-        count_arr.push_back(tx_trans_count);
         tx_count=0;
       end
       if(h_cl_pkt.pkt_tx_eop == 1 && tx_trans_count<8) begin
         h_cl_pkt.pkt_tx_mod = 'h0;
         h_cl_pkt.pkt_tx_eop = 'h0;
         expected.push_back(h_cl_pkt);
-        push_expected();
+        push_expected(tx_trans_count);
+        h_cfg.act_count -= 8 - tx_trans_count;
       end
       else if(h_cl_pkt.pkt_tx_eop == 1 && tx_trans_count==8 && h_cl_pkt.pkt_tx_mod <4 && h_cl_pkt.pkt_tx_mod !=0) begin
         h_cl_pkt.pkt_tx_mod = 'h4;
@@ -83,15 +110,7 @@ class xgemac_scoreboard;
       $display("From rx monitor to scoreboard");
       h_cl_pkt.display();
       check_exp_data_and_act_data(h_cl_pkt);
-      if(h_cl_pkt.pkt_rx_sop==1) begin
-        rx_trans_count=count_arr.pop_front();
-      end
-      if(rx_trans_count>=8) begin
-        h_cfg.act_count++;
-      end
-      else if(h_cl_pkt.pkt_rx_eop==1) begin
-        h_cfg.act_count += rx_trans_count;
-      end
+      h_cfg.act_count++;
     end
   endtask: wait_for_rx_pkt
 

@@ -5,6 +5,8 @@ class xgemac_tx_gen;
   mailbox#(xgemac_tx_pkt) tx_mbx;
   xgemac_tb_config h_cfg;
 
+  int current_trans_count, pre_trans_count;
+
   function new(xgemac_tb_config h_cfg);
     this.h_cfg=h_cfg;
   endfunction: new
@@ -12,6 +14,7 @@ class xgemac_tx_gen;
   function void build();
     $display("%0s: Build method", TAG);
     tx_mbx=new(1);
+    current_trans_count=h_cfg.trans_count;
   endfunction: build
 
   function void connect();
@@ -21,15 +24,19 @@ class xgemac_tx_gen;
   task gen_direct_stimulus_and_put_in_mbx();
     xgemac_tx_pkt h_pkt, h_cl_pkt;
     int unsigned count;
-    repeat(h_cfg.trans_count) begin
+    current_trans_count-=pre_trans_count;
+    pre_trans_count=0;
+    repeat(current_trans_count) begin
       h_pkt=new();
+      pre_trans_count--;
       h_pkt.pkt_tx_data = `DATA_WIDTH'hABCD_1234_ABCD_5678;
       h_pkt.pkt_tx_sop  = (count==0) ? 'h1 : 'h0;
       count++;
-      h_pkt.pkt_tx_eop  = (count==h_cfg.trans_count) ? 'h1 : 'h0;
-      h_pkt.pkt_tx_mod  = (count==h_cfg.trans_count) ? 'h4 : 'h0;
+      h_pkt.pkt_tx_eop  = (count==current_trans_count) ? 'h1 : 'h0;
+      h_pkt.pkt_tx_mod  = (count==current_trans_count) ? 'h4 : 'h0;
       $cast(h_cl_pkt, h_pkt.clone());
       tx_mbx.put(h_cl_pkt);
+      pre_trans_count+=2;
     end
   endtask: gen_direct_stimulus_and_put_in_mbx
 
@@ -37,8 +44,11 @@ class xgemac_tx_gen;
     xgemac_tx_pkt h_pkt, h_cl_pkt;
     int unsigned count, temp_count, tot_count;
     count=10;
-    repeat(h_cfg.trans_count) begin
+    current_trans_count-=pre_trans_count;
+    pre_trans_count=0;
+    repeat(current_trans_count) begin
       h_pkt=new();
+      pre_trans_count--;
       h_pkt.pkt_tx_data   =   h_cfg.incr_start_data;
       h_cfg.incr_start_data++;
       temp_count++;
@@ -49,7 +59,7 @@ class xgemac_tx_gen;
       else begin
         h_pkt.pkt_tx_sop    =   'h0;
       end
-      if(temp_count==count || tot_count==h_cfg.trans_count) begin
+      if(temp_count==count) begin
         h_pkt.pkt_tx_eop    =   'h1;
         h_pkt.pkt_tx_mod    =   'h0;
         temp_count=0;
@@ -60,6 +70,7 @@ class xgemac_tx_gen;
       end
       $cast(h_cl_pkt, h_pkt.clone());
       tx_mbx.put(h_cl_pkt);
+      pre_trans_count+=2;
     end
   endtask: gen_incremental_stimulus_and_put_in_mbx
 
@@ -67,12 +78,15 @@ class xgemac_tx_gen;
     xgemac_tx_pkt h_pkt, h_cl_pkt;
     int unsigned count, index;
     int unsigned arr[$];
-    if(!std::randomize(arr) with {arr.size<50; arr.sum()==h_cfg.trans_count; foreach(arr[i]) {arr[i]>=2;}}) begin
+    current_trans_count-=pre_trans_count;
+    pre_trans_count=0;
+    if(!std::randomize(arr) with {arr.size<50; arr.sum()==current_trans_count; foreach(arr[i]) {arr[i]>=2;}}) begin
       $display("Array randomization fail in tx generator");
     end
-    repeat(h_cfg.trans_count) begin
+    repeat(current_trans_count) begin
       h_pkt=new();
       count++;
+      pre_trans_count--;
       if(!h_pkt.randomize()) begin
         $error("RANDOMIZATION FAIL");
       end
@@ -94,6 +108,7 @@ class xgemac_tx_gen;
       end
       $cast(h_cl_pkt, h_pkt.clone());
       tx_mbx.put(h_cl_pkt);
+      pre_trans_count+=2;
     end
   endtask: gen_random_stimulus_and_put_in_mbx
 
@@ -101,7 +116,7 @@ class xgemac_tx_gen;
     xgemac_tx_pkt h_pkt, h_cl_pkt;
     int unsigned count;
     bit [`DATA_WIDTH - 1: 0] tx_data;
-    repeat(h_cfg.trans_count) begin
+    repeat(current_trans_count) begin
       h_pkt=new();
       if($value$plusargs({$sformatf("%0d: TX_DATA=", count), "%0d"}, tx_data)) begin
         h_pkt.pkt_tx_data = tx_data;

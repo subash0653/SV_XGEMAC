@@ -69,10 +69,15 @@ program xgemac_test_top(xgemac_tx_interface tx_intff, xgemac_rx_interface rx_int
                                       h_tx_full_test=new(h_cfg);
                                       $cast(h_test, h_tx_full_test);
                                     end
-      "xgemac_reset_test":          begin
-                                      xgemac_reset_test h_reset_test;
-                                      h_reset_test=new(h_cfg);
-                                      $cast(h_test, h_reset_test);
+      "xgemac_tx_reset_test":       begin
+                                      xgemac_tx_reset_test h_tx_reset_test;
+                                      h_tx_reset_test=new(h_cfg);
+                                      $cast(h_test, h_tx_reset_test);
+                                    end
+      "xgemac_rx_reset_test":       begin
+                                      xgemac_rx_reset_test h_rx_reset_test;
+                                      h_rx_reset_test=new(h_cfg);
+                                      $cast(h_test, h_rx_reset_test);
                                     end
     endcase
     h_test.build();

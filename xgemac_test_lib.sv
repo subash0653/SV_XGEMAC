@@ -196,11 +196,50 @@ class xgemac_tx_full_test extends xgemac_base_test;
 
 endclass: xgemac_tx_full_test
 
-class xgemac_reset_test extends xgemac_base_test;
+class xgemac_tx_reset_test extends xgemac_base_test;
 
   function new(xgemac_tb_config h_cfg);
     super.new(h_cfg);
-    TAG = "XGEMAC_RESET_TEST";
+    TAG = "XGEMAC_TX_RESET_TEST";
+  endfunction: new
+
+  function void set_test_specific_configuration();
+    $display("%0s: Set config method", TAG);
+    h_cfg.trans_count=80;
+  endfunction: set_test_specific_configuration
+
+  task give_stimulus();
+    process p[2];
+    $display("%0s: Give stimulus", TAG);
+    fork
+      begin
+        p[0]=process::self();
+        h_env.h_tx_gen.gen_random_stimulus_and_put_in_mbx();
+      end
+      begin
+        p[1]=process::self();
+        #170ns;
+        fork
+          h_env.txrx_rst_gen.gen_rst_and_put_in_mbx();
+          h_env.xgmii_rst_gen.gen_rst_and_put_in_mbx();
+        join_none
+      end
+    join_any
+    foreach(p[i]) begin
+      if(p[i]!=null) begin
+        p[i].kill();
+      end
+    end
+    h_env.h_tx_gen.gen_random_stimulus_and_put_in_mbx();
+  endtask: give_stimulus
+
+endclass: xgemac_tx_reset_test
+
+class xgemac_rx_reset_test extends xgemac_base_test;
+
+  function new(xgemac_tb_config h_cfg);
+    super.new(h_cfg);
+    TAG = "XGEMAC_RX_RESET_TEST";
   endfunction: new
 
   function void set_test_specific_configuration();
@@ -209,19 +248,23 @@ class xgemac_reset_test extends xgemac_base_test;
   endfunction: set_test_specific_configuration
 
   task give_stimulus();
+    process p[2];
     $display("%0s: Give stimulus", TAG);
-    fork
-      h_env.h_tx_gen.gen_direct_stimulus_and_put_in_mbx();
+    fork 
       begin
-        //wait(h_cfg.act_count==25);
-        #170ns;
+        p[0]=process::self();
+        h_env.h_tx_gen.gen_direct_stimulus_and_put_in_mbx();
+      end
+      begin
+        p[1]=process::self();
+        wait(h_cfg.act_count==25);
         fork
           h_env.txrx_rst_gen.gen_rst_and_put_in_mbx();
-          h_env.wb_rst_gen.gen_rst_and_put_in_mbx();
           h_env.xgmii_rst_gen.gen_rst_and_put_in_mbx();
-        join
+        join_none
+        #50ns;
       end
     join
   endtask: give_stimulus
 
-endclass: xgemac_reset_test
+endclass: xgemac_rx_reset_test

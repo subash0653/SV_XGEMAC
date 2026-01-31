@@ -60,7 +60,7 @@ class xgemac_rx_monitor;
     xgemac_rx_pkt h_pkt, h_cl_pkt;
     h_pkt = new();
     forever begin
-      if(vif.mrcb.pkt_rx_val) begin
+      if(vif.mrcb.pkt_rx_val===1) begin
         h_pkt.pkt_rx_sop  =   vif.mrcb.pkt_rx_sop;
         h_pkt.pkt_rx_eop  =   vif.mrcb.pkt_rx_eop;
         h_pkt.pkt_rx_data =   vif.mrcb.pkt_rx_data;

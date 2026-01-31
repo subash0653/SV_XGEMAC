@@ -195,6 +195,7 @@ class xgemac_env;
       h_scbd.tx_mbx = h_tx_mon.tx_mbx;
       h_scbd.rx_mbx = h_rx_mon.rx_mbx;
       h_scbd.rst_mbx= txrx_rst_mon.rst_mbx; 
+      h_scbd.wb_mbx = h_wb_mon.wb_mbx;
     end
 
     if(h_cfg.has_wb_gen) begin
@@ -208,7 +209,6 @@ class xgemac_env;
 
     if(h_cfg.has_wb_mon) begin
       h_wb_mon.connect();
-      h_scbd.wb_mbx = h_wb_mon.wb_mbx;
     end
 
   endfunction: connect

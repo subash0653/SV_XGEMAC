@@ -16,7 +16,7 @@ class xgemac_tb_config;
   bit has_wb_drv  = 1;
   bit has_wb_mon  = 1;
   
-  int unsigned trans_count, act_count;
+  int trans_count, act_count;
 
   string print_string;
   bit test_status;
