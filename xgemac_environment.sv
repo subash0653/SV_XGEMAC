@@ -15,9 +15,9 @@ class xgemac_env;
   xgemac_rst_gen xgmii_rst_gen;
 
   //reset driver
-  xgemac_rst_driver#(.RST_PERIOD(`RESET_PERIOD), .rst_type(POS_RESET), .vif_t(wb_rst_i_vif_t)) wb_rst_drv;
-  xgemac_rst_driver#(.RST_PERIOD(`RESET_PERIOD), .rst_type(NEG_RESET), .vif_t(reset_156m25_n_vif_t)) txrx_rst_drv;
-  xgemac_rst_driver#(.RST_PERIOD(`RESET_PERIOD), .rst_type(NEG_RESET), .vif_t(reset_xgmii_txrx_n_vif_t)) xgmii_rst_drv;
+  xgemac_rst_driver#(.rst_type(POS_RESET), .vif_t(wb_rst_i_vif_t)) wb_rst_drv;
+  xgemac_rst_driver#(.rst_type(NEG_RESET), .vif_t(reset_156m25_n_vif_t)) txrx_rst_drv;
+  xgemac_rst_driver#(.rst_type(NEG_RESET), .vif_t(reset_xgmii_txrx_n_vif_t)) xgmii_rst_drv;
 
   //reset monitor
   xgemac_rst_monitor#(.vif_t(wb_rst_i_vif_t), .rst_type(POS_RESET)) wb_rst_mon;

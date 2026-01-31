@@ -214,7 +214,7 @@ class xgemac_tx_reset_test extends xgemac_base_test;
     fork
       begin
         p[0]=process::self();
-        h_env.h_tx_gen.gen_random_stimulus_and_put_in_mbx();
+        h_env.h_tx_gen.gen_direct_stimulus_and_put_in_mbx();
       end
       begin
         p[1]=process::self();
@@ -230,7 +230,7 @@ class xgemac_tx_reset_test extends xgemac_base_test;
         p[i].kill();
       end
     end
-    h_env.h_tx_gen.gen_random_stimulus_and_put_in_mbx();
+    h_env.h_tx_gen.gen_direct_stimulus_and_put_in_mbx();
   endtask: give_stimulus
 
 endclass: xgemac_tx_reset_test
@@ -268,3 +268,76 @@ class xgemac_rx_reset_test extends xgemac_base_test;
   endtask: give_stimulus
 
 endclass: xgemac_rx_reset_test
+
+class xgemac_wot_sop_test extends xgemac_base_test;
+
+  function new(xgemac_tb_config h_cfg);
+    super.new(h_cfg);
+    TAG = "XGEMAC_WOT_SOP_TEST";
+  endfunction: new
+
+  function void set_test_specific_configuration();
+    $display("%0s: Set config method", TAG);
+    h_cfg.trans_count=10;
+  endfunction: set_test_specific_configuration
+
+  task give_stimulus();
+    $display("%0s: Give stimulus", TAG);
+    h_env.h_tx_gen.gen_stimulus_wot_sop_and_put_in_mbx();
+  endtask: give_stimulus
+
+endclass: xgemac_wot_sop_test
+
+class xgemac_wot_eop_test extends xgemac_base_test;
+
+  function new(xgemac_tb_config h_cfg);
+    super.new(h_cfg);
+    TAG = "XGEMAC_WOT_EOP_TEST";
+  endfunction: new
+
+  function void set_test_specific_configuration();
+    $display("%0s: Set config method", TAG);
+    h_cfg.trans_count=10;
+  endfunction: set_test_specific_configuration
+  
+  task give_stimulus();
+    $display("%0s: Give stimulus", TAG);
+    h_env.h_tx_gen.gen_stimulus_wot_eop_and_put_in_mbx();
+  endtask: give_stimulus
+
+endclass: xgemac_wot_eop_test
+
+class xgemac_sop_eop_at_same_cycle_test extends xgemac_base_test;
+
+  function new(xgemac_tb_config h_cfg);
+    super.new(h_cfg);
+    TAG = "XGEMAC_SOP_EOP_AT_SAME_CYCLE_TEST";
+  endfunction: new
+
+  function void set_test_specific_configuration();
+    $display("%0s: Set config method", TAG);
+    h_cfg.trans_count=5;
+  endfunction: set_test_specific_configuration
+
+  task give_stimulus();
+    $display("%0s: Give stimulus method", TAG);
+  endtask: give_stimulus
+
+endclass: xgemac_sop_eop_at_same_cycle_test
+
+class xgemac_wot_sop_eop_test extends xgemac_base_test;
+
+  function new(xgemac_tb_config h_cfg);
+    super.new(h_cfg);
+  endfunction: new
+
+  function void set_test_specific_configuration();
+    $display("%0s: Set config method", TAG);
+    h_cfg.trans_count=5;
+  endfunction: set_test_specific_configuration
+
+  task give_stimulus();
+    $display("%0s: Give stimulus method", TAG);
+  endtask: give_stimulus
+
+endclass: xgemac_wot_sop_eop_test

@@ -79,6 +79,16 @@ program xgemac_test_top(xgemac_tx_interface tx_intff, xgemac_rx_interface rx_int
                                       h_rx_reset_test=new(h_cfg);
                                       $cast(h_test, h_rx_reset_test);
                                     end
+      "xgemac_wot_sop_test":        begin
+                                      xgemac_wot_sop_test h_wot_sop_test;
+                                      h_wot_sop_test=new(h_cfg);
+                                      $cast(h_test, h_wot_sop_test);
+                                    end
+      "xgemac_wot_sop_eop_test":    begin
+                                      xgemac_wot_sop_eop_test h_wot_sop_eop_test;
+                                      h_wot_sop_eop_test=new(h_cfg);
+                                      $cast(h_test, h_wot_sop_eop_test);
+                                    end
     endcase
     h_test.build();
     h_test.connect();

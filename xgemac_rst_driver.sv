@@ -1,9 +1,9 @@
-class xgemac_rst_driver#(RST_PERIOD, rst_type_t rst_type, type vif_t);
+class xgemac_rst_driver#(rst_type_t rst_type, type vif_t);
 
   string TAG = "XGEMAC_RST_DRIVER";
 
   vif_t vif;
-  mailbox#(bit) rst_mbx;
+  mailbox#(byte) rst_mbx;
 
   function new(vif_t vif);
     this.vif=vif;
@@ -19,13 +19,16 @@ class xgemac_rst_driver#(RST_PERIOD, rst_type_t rst_type, type vif_t);
   endfunction: connect
 
   task run();
+    byte rst_period;
     $display("%0s: Run method", TAG);
     forever begin
-      bit b;
-      rst_mbx.get(b);
+      rst_mbx.get(rst_period);
+      if(rst_period==0) begin
+        rst_period=`RESET_PERIOD;
+      end
       @(posedge vif.clk);
       vif.rst = ~rst_type;
-      repeat(RST_PERIOD) begin
+      repeat(rst_period) begin
         @(posedge vif.clk);
       end
       vif.rst = rst_type;
