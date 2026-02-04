@@ -15,6 +15,10 @@ class xgemac_tb_config;
   bit has_wb_gen  = 1;
   bit has_wb_drv  = 1;
   bit has_wb_mon  = 1;
+
+  bit tx_disable_test = 0;
+
+  bit padding_feature;
   
   int trans_count, act_count;
 

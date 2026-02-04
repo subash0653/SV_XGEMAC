@@ -24,6 +24,7 @@ package xgemac_package;
 
   `include "xgemac_tb_config.sv"
   `include "xgemac_clk_driver.sv"
+  `include "xgemac_rst_pkt.sv"
   `include "xgemac_rst_gen.sv"
   `include "xgemac_rst_driver.sv"
   `include "xgemac_rst_monitor.sv"
@@ -38,6 +39,7 @@ package xgemac_package;
   `include "xgemac_wb_gen.sv"
   `include "xgemac_wb_driver.sv" 
   `include "xgemac_wb_monitor.sv"
+  `include "xgemac_coverage.sv"
   `include "xgemac_scoreboard.sv"
   `include "xgemac_environment.sv"
   `include "xgemac_test_lib.sv"

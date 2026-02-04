@@ -42,7 +42,7 @@ class xgemac_tx_gen;
 
   task gen_incremental_stimulus_and_put_in_mbx();
     xgemac_tx_pkt h_pkt, h_cl_pkt;
-    int unsigned count, temp_count, tot_count;
+    int unsigned count, temp_count, tot_count, mod_count;
     count=10;
     current_trans_count-=pre_trans_count;
     pre_trans_count=0;
@@ -61,7 +61,7 @@ class xgemac_tx_gen;
       end
       if(temp_count==count) begin
         h_pkt.pkt_tx_eop    =   'h1;
-        h_pkt.pkt_tx_mod    =   'h0;
+        h_pkt.pkt_tx_mod    =   mod_count++;
         temp_count=0;
       end
       else begin
@@ -80,8 +80,8 @@ class xgemac_tx_gen;
     int unsigned arr[$];
     current_trans_count-=pre_trans_count;
     pre_trans_count=0;
-    if(!std::randomize(arr) with {arr.size<50; arr.sum()==current_trans_count; foreach(arr[i]) {arr[i]>=2;}}) begin
-      $display("Array randomization fail in tx generator");
+    if(!std::randomize(arr) with {arr.size<=current_trans_count/2; arr.size()!=0; arr.sum()==current_trans_count; foreach(arr[i]) {arr[i]>=2; arr[i]<=current_trans_count;}}) begin
+      $display("#################### CONSTRAINT FAIL : %0S ##################################", TAG);
     end
     repeat(current_trans_count) begin
       h_pkt=new();
@@ -142,10 +142,7 @@ class xgemac_tx_gen;
         $error("RANDOMIZATION FAIL AT : %0S", TAG);
       end
       h_pkt.pkt_tx_sop = 'h0;
-      h_pkt.pkt_tx_eop = 'h0;
-      if(count==current_trans_count) begin
-        h_pkt.pkt_tx_eop = 'h1;
-      end
+      h_pkt.pkt_tx_eop = 'h1;
       $cast(h_cl_pkt, h_pkt.clone());
       tx_mbx.put(h_cl_pkt);
       pre_trans_count+=2;
@@ -153,6 +150,7 @@ class xgemac_tx_gen;
   endtask: gen_stimulus_wot_sop_and_put_in_mbx
 
   task gen_stimulus_wot_eop_and_put_in_mbx();
+    int data;
     xgemac_tx_pkt h_pkt, h_cl_pkt;
     int unsigned count;
     current_trans_count-=pre_trans_count;
@@ -161,21 +159,17 @@ class xgemac_tx_gen;
       h_pkt=new();
       pre_trans_count--;
       count++;
-      if(!h_pkt.randomize()) begin
-        $error("RANDOMIZATION FAIL AT: %0S", TAG);
-      end
-      h_pkt.pkt_tx_sop = 'h0;
+      data++;
+      h_pkt.pkt_tx_data= data;
+      h_pkt.pkt_tx_sop = 'h1;
       h_pkt.pkt_tx_eop = 'h0;
-      if(count==1) begin
-        h_pkt.pkt_tx_sop = 'h1;
-      end
       $cast(h_cl_pkt, h_pkt.clone());
       tx_mbx.put(h_cl_pkt);
       pre_trans_count+=2;
     end
   endtask: gen_stimulus_wot_eop_and_put_in_mbx
 
-  task gen_stimulus_sop_eop_at_same_cycle();
+  task gen_stimulus_sop_eop_at_same_cycle_and_put_in_mbx();
     xgemac_tx_pkt h_pkt, h_cl_pkt;
     current_trans_count-=pre_trans_count;
     pre_trans_count=0;
@@ -187,10 +181,30 @@ class xgemac_tx_gen;
       end
       h_pkt.pkt_tx_sop = 'h1;
       h_pkt.pkt_tx_eop = 'h1;
+      h_pkt.pkt_tx_mod = 'h0;
+      $cast(h_cl_pkt, h_pkt.clone());
+      tx_mbx.put(h_cl_pkt);
+      pre_trans_count+=2;
     end
-    $cast(h_cl_pkt, h_pkt.clone());
-    tx_mbx.put(h_cl_pkt);
-    pre_trans_count+=2;
-  endtask: gen_stimulus_sop_eop_at_same_cycle
+  endtask: gen_stimulus_sop_eop_at_same_cycle_and_put_in_mbx
+
+  task gen_stimulus_wot_sop_eop_and_put_in_mbx();
+    xgemac_tx_pkt h_pkt, h_cl_pkt;
+    current_trans_count-=pre_trans_count;
+    pre_trans_count=0;
+    repeat(current_trans_count) begin
+      h_pkt=new();
+      pre_trans_count--;
+      /*if(!h_pkt.randomize()) begin
+        $error("RANDOMIZATION FAIL AT: %0S", TAG);
+      end*/
+      h_pkt.pkt_tx_data = 'hABCD1234ABCD5678;
+      h_pkt.pkt_tx_sop = 'h0;
+      h_pkt.pkt_tx_eop = 'h0;
+      $cast(h_cl_pkt, h_pkt.clone());
+      tx_mbx.put(h_cl_pkt);
+      pre_trans_count+=2;
+    end
+  endtask: gen_stimulus_wot_sop_eop_and_put_in_mbx
 
 endclass: xgemac_tx_gen

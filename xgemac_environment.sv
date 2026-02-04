@@ -245,6 +245,9 @@ class xgemac_env;
           wb_rst_drv.run();
           txrx_rst_drv.run();
           xgmii_rst_drv.run();
+          wb_rst_drv.wait_for_pkt();
+          txrx_rst_drv.wait_for_pkt();
+          xgmii_rst_drv.wait_for_pkt();
         join_none
       end
     end

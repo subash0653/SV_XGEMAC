@@ -2,14 +2,18 @@ class xgemac_scoreboard;
 
   string TAG = "XGEMAC_SCOREBOARD";
 
+  bit[1:0] sop_flag;
+
   xgemac_tb_config h_cfg;
   
   mailbox#(xgemac_tx_pkt) tx_mbx;
   mailbox#(xgemac_rx_pkt) rx_mbx;
   mailbox#(xgemac_wb_pkt) wb_mbx;
-  mailbox#(bit)           rst_mbx;
+  mailbox#(xgemac_rst_pkt)rst_mbx;
 
   xgemac_tx_pkt expected[$];
+
+  xgemac_coverage h_cov;
 
   function new(xgemac_tb_config h_cfg);
     this.h_cfg = h_cfg;
@@ -17,6 +21,7 @@ class xgemac_scoreboard;
 
   function void build();
     $display("%0s: Build method", TAG);
+    h_cov = new(h_cfg);
   endfunction: build
 
   function void connect();
@@ -54,10 +59,11 @@ class xgemac_scoreboard;
   endtask: run
 
   task wait_for_reset();
-      bit b;
-      rst_mbx.get(b);
-      h_cfg.act_count+=expected.size();
-      expected.delete();
+    xgemac_rst_pkt h_pkt;
+    rst_mbx.get(h_pkt);
+    h_cfg.act_count+=expected.size();
+    expected.delete();
+    sop_flag = 0;
   endtask: wait_for_reset
   
   function void push_expected(int tx_trans_count);
@@ -70,6 +76,7 @@ class xgemac_scoreboard;
     h_pkt.pkt_tx_mod = 'h4;
     h_pkt.pkt_tx_eop = 'h1;
     expected.push_back(h_pkt);
+    h_cfg.padding_feature = 1;
   endfunction: push_expected
 
   task wait_for_tx_pkt();
@@ -81,23 +88,39 @@ class xgemac_scoreboard;
       $cast(h_cl_pkt, h_pkt.clone());
       //$display("From tx monitor to scoreboard");
       //h_cl_pkt.display();
-      if(h_cl_pkt.pkt_tx_eop == 1) begin
-        tx_trans_count = tx_count;
-        tx_count=0;
+      h_cov.tx_sample(h_cl_pkt);
+      if(h_cl_pkt.pkt_tx_sop == 1) begin
+        if(sop_flag == 0) begin
+          sop_flag = 1;
+        end
+        else if(sop_flag == 1) begin
+          sop_flag = 3;
+          expected.delete();
+        end
       end
-      if(h_cl_pkt.pkt_tx_eop == 1 && tx_trans_count<8) begin
-        h_cl_pkt.pkt_tx_mod = 'h0;
-        h_cl_pkt.pkt_tx_eop = 'h0;
-        expected.push_back(h_cl_pkt);
-        push_expected(tx_trans_count);
-        h_cfg.act_count -= 8 - tx_trans_count;
+      else if(sop_flag == 1 && h_cl_pkt.pkt_tx_eop == 1) begin
+        sop_flag = 2;
       end
-      else if(h_cl_pkt.pkt_tx_eop == 1 && tx_trans_count==8 && h_cl_pkt.pkt_tx_mod <4 && h_cl_pkt.pkt_tx_mod !=0) begin
-        h_cl_pkt.pkt_tx_mod = 'h4;
-        expected.push_back(h_cl_pkt);
-      end
-      else begin
-        expected.push_back(h_cl_pkt);
+      if(sop_flag != 3 && sop_flag != 0 && h_cfg.tx_disable_test == 0) begin
+        if(h_cl_pkt.pkt_tx_eop == 1) begin
+          tx_trans_count = tx_count;
+          tx_count=0;
+          sop_flag = 0;
+        end
+        if(h_cl_pkt.pkt_tx_eop == 1 && tx_trans_count<8) begin
+          h_cl_pkt.pkt_tx_mod = 'h0;
+          h_cl_pkt.pkt_tx_eop = 'h0;
+          expected.push_back(h_cl_pkt);
+          push_expected(tx_trans_count);
+          h_cfg.act_count -= 8 - tx_trans_count;
+        end
+        else if(h_cl_pkt.pkt_tx_eop == 1 && tx_trans_count==8 && h_cl_pkt.pkt_tx_mod <4 && h_cl_pkt.pkt_tx_mod !=0) begin
+          h_cl_pkt.pkt_tx_mod = 'h4;
+          expected.push_back(h_cl_pkt);
+        end
+        else begin
+          expected.push_back(h_cl_pkt);
+        end
       end
     end
   endtask: wait_for_tx_pkt
@@ -109,6 +132,7 @@ class xgemac_scoreboard;
       $cast(h_cl_pkt, h_pkt.clone());
       $display("From rx monitor to scoreboard");
       h_cl_pkt.display();
+      h_cov.rx_sample(h_cl_pkt);
       check_exp_data_and_act_data(h_cl_pkt);
       h_cfg.act_count++;
     end
@@ -124,7 +148,7 @@ class xgemac_scoreboard;
   function void check_exp_data_and_act_data(xgemac_rx_pkt h_act_pkt);
     xgemac_tx_pkt h_exp_pkt;
     h_exp_pkt = expected.pop_front();
-    h_exp_pkt.display();
+    //h_exp_pkt.display();
     if(h_act_pkt.pkt_rx_sop   !==    h_exp_pkt.pkt_tx_sop) begin
       $error("SOP does not match");
       h_cfg.test_status=1;
@@ -167,6 +191,7 @@ class xgemac_scoreboard;
     else begin
       $display("%0s: TEST PASS | ACTUAL COUNT IS = %0d", TAG, h_cfg.act_count);
     end
+    h_cov.display_coverage();
   endfunction: report
 
 endclass: xgemac_scoreboard
